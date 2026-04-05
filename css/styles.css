@@ -319,29 +319,39 @@ header {
 .category-label-container {
   display: flex;
   align-items: center;
-  max-width: 1440px; /* 与main容器的max-width相同 */
+  max-width: 1440px;
   width: 100%;
-  padding: 10px 24px 5px 24px; /* 减少上下内边距 */
-  margin: 0 auto; /* 居中显示 */
+  padding: 10px 24px 5px 24px;
+  margin: 0 auto;
   position: relative;
 }
 
-.category-nav-label, .filter-nav-label {
+.keyword-label-container {
+  display: flex;
+  align-items: center;
+  max-width: 1440px;
+  width: 100%;
+  padding: 5px 24px 5px 24px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.category-nav-label, .filter-nav-label, .keyword-nav-label {
   font-weight: 600;
   background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-right: 8px; /* 减少右侧间距 */
+  margin-right: 8px;
   white-space: nowrap;
-  min-width: 90px; /* 减少宽度从120px到90px */
-  letter-spacing: 0.3px; /* 减少字母间距 */
-  font-size: 14px; /* 减小字体大小 */
+  min-width: 90px;
+  letter-spacing: 0.3px;
+  font-size: 14px;
   text-transform: uppercase;
-  opacity: 1; /* 增加不透明度 */
+  opacity: 1;
   position: relative;
   z-index: 1;
-  padding-left: 3px; /* 减少左侧内边距 */
+  padding-left: 3px;
 }
 
 /* 删除装饰线的CSS规则 */
@@ -356,11 +366,27 @@ header {
   -ms-overflow-style: none;
   scrollbar-width: none;
   width: 100%;
-  justify-content: flex-start; /* 改为左对齐 */
-  flex-wrap: nowrap; /* 禁止换行 */
-  white-space: nowrap; /* 确保内容不会换行 */
-  /* 添加鼠标滚轮横向滚动支持 */
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  white-space: nowrap;
   overflow-y: hidden;
+}
+
+.keyword-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  width: 100%;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow-y: hidden;
+}
+
+.keyword-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .filter-scroll {
@@ -519,7 +545,20 @@ header {
 
 /* 关键词按钮样式 */
 .keyword-button {
-  background-color: rgba(167, 139, 250, 0.10); /* accent tint */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+  white-space: nowrap;
+  cursor: pointer;
+  margin: 0 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  background-color: rgba(167, 139, 250, 0.10);
   color: var(--accent-color);
   border: 1px solid rgba(167, 139, 250, 0.25);
 }
@@ -534,6 +573,25 @@ header {
   color: white;
   border-color: var(--accent-color);
   box-shadow: 0 2px 8px rgba(167, 139, 250, 0.25);
+}
+
+.keyword-button .keyword-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  min-width: 20px;
+  height: 20px;
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  font-size: 12px;
+  padding: 0 6px;
+  transition: var(--transition);
+}
+
+.keyword-button.active .keyword-count {
+  background-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
 }
 
 .keyword-tag.active {
@@ -1689,10 +1747,6 @@ footer {
   letter-spacing: 0;
   text-transform: none;
 }
-
-  padding-left: 3px; /* 减少左侧内边距 */
-}
-
 
 .author-tag {
   display: inline-flex;

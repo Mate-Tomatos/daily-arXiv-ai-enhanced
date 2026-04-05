@@ -2,7 +2,42 @@ let currentDate = '';
 let availableDates = [];
 let currentView = 'grid'; // 'grid' 或 'list'
 let currentCategory = 'all';
+let currentKeywordFilter = 'all'; // 研究方向关键词筛选
 let paperData = {};
+
+// 研究方向关键词列表（与后端 config.yaml 保持一致）
+const RESEARCH_KEYWORDS = [
+  "Retrieval-Augmented Generation",
+  "Large Language Model",
+  "Vision Language Model",
+  "Diffusion Model",
+  "Agent",
+  "Reasoning",
+  "Reinforcement Learning",
+  "Knowledge Graph",
+  "Hallucination",
+  "Text-to-Image",
+  "Text-to-Video",
+  "Object Detection",
+  "Image Segmentation",
+  "3D Reconstruction",
+  "Point Cloud",
+  "Autonomous Driving",
+  "Medical Image",
+  "Federated Learning",
+  "Transformer",
+  "Graph Neural Network",
+  "Representation Learning",
+  "Domain Adaptation",
+  "Anomaly Detection",
+  "Prompt",
+  "Fine-tuning",
+  "Code Generation",
+  "Robotics",
+  "Embodied AI",
+  "Speech",
+  "Video Understanding"
+];
 let flatpickrInstance = null;
 let isRangeMode = false;
 let activeKeywords = []; // 存储激活的关键词
@@ -696,6 +731,7 @@ async function loadPapersByDate(date) {
     const categories = getAllCategories(paperData);
     
     renderCategoryFilter(categories);
+    renderKeywordFilter();
     
     renderPapers();
   } catch (error) {
@@ -747,7 +783,8 @@ function parseJsonlData(jsonlText, date) {
         conclusion: paper.AI && paper.AI.conclusion ? paper.AI.conclusion : '',
         code_url: paper.code_url || '',
         code_stars: paper.code_stars || 0,
-        code_last_update: paper.code_last_update || ''
+        code_last_update: paper.code_last_update || '',
+        matched_keywords: Array.isArray(paper.matched_keywords) ? paper.matched_keywords : []
       });
     } catch (error) {
       console.error('解析JSON行失败:', error, line);
@@ -772,6 +809,73 @@ function getAllCategories(data) {
     }),
     categoryCounts: catePaperCount
   };
+}
+
+// 渲染研究方向关键词筛选栏
+function renderKeywordFilter() {
+  const container = document.getElementById('keywordScroll');
+  if (!container) return;
+
+  // 从所有论文中收集 matched_keywords 及其计数
+  const keywordCounts = {};
+  let totalWithKeywords = 0;
+  let totalPapers = 0;
+
+  Object.values(paperData).forEach(papers => {
+    papers.forEach(paper => {
+      totalPapers++;
+      if (paper.matched_keywords && paper.matched_keywords.length > 0) {
+        totalWithKeywords++;
+        paper.matched_keywords.forEach(kw => {
+          keywordCounts[kw] = (keywordCounts[kw] || 0) + 1;
+        });
+      }
+    });
+  });
+
+  // 按计数降序排列关键词
+  const sortedKeywords = Object.keys(keywordCounts).sort((a, b) => keywordCounts[b] - keywordCounts[a]);
+
+  // 如果没有任何 matched_keywords，隐藏整个关键词栏
+  const keywordContainer = document.querySelector('.keyword-label-container');
+  if (sortedKeywords.length === 0) {
+    if (keywordContainer) keywordContainer.style.display = 'none';
+    currentKeywordFilter = 'all';
+    return;
+  }
+  if (keywordContainer) keywordContainer.style.display = 'flex';
+
+  // 渲染按钮
+  container.innerHTML = `
+    <button class="keyword-button ${currentKeywordFilter === 'all' ? 'active' : ''}" data-keyword-filter="all">All<span class="keyword-count">${totalPapers}</span></button>
+  `;
+
+  sortedKeywords.forEach(kw => {
+    const btn = document.createElement('button');
+    btn.className = `keyword-button ${kw === currentKeywordFilter ? 'active' : ''}`;
+    btn.innerHTML = `${kw}<span class="keyword-count">${keywordCounts[kw]}</span>`;
+    btn.dataset.keywordFilter = kw;
+    btn.addEventListener('click', () => filterByKeyword(kw));
+    container.appendChild(btn);
+  });
+
+  // "All" 按钮事件
+  container.querySelector('[data-keyword-filter="all"]').addEventListener('click', () => filterByKeyword('all'));
+}
+
+// 按研究方向关键词筛选
+function filterByKeyword(keyword) {
+  currentKeywordFilter = keyword;
+
+  // 更新按钮状态
+  document.querySelectorAll('.keyword-button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.keywordFilter === keyword);
+  });
+
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  renderPapers();
 }
 
 function renderCategoryFilter(categories) {
@@ -912,6 +1016,13 @@ function renderPapers() {
     });
   } else if (paperData[currentCategory]) {
     papers = paperData[currentCategory];
+  }
+
+  // 按研究方向关键词筛选
+  if (currentKeywordFilter !== 'all') {
+    papers = papers.filter(p =>
+      p.matched_keywords && p.matched_keywords.includes(currentKeywordFilter)
+    );
   }
   
   // 创建匹配论文的集合
@@ -1530,6 +1641,7 @@ async function loadPapersByDateRange(startDate, endDate) {
     const categories = getAllCategories(paperData);
     
     renderCategoryFilter(categories);
+    renderKeywordFilter();
     
     renderPapers();
   } catch (error) {
