@@ -2,18 +2,26 @@ arxiv:
   categories:  # 文章类型
     - cs.CV
     - cs.CL
+    - cs.RO
+    - cs.AI
+    - cs.LG
 
-  # 研究方向关键词过滤（论文标题或摘要中须包含至少一个关键词才会被保留）
+  # 必须出现的词语（论文标题或摘要中须包含至少一个才进入后续过滤）
+  # 这是第一层"粗筛"，用于限定大方向
+  # 留空或注释掉则跳过此层过滤
+  required_terms:
+    - "LLM"
+    - "large language model"
+    - "autonomous driving"
+    - "feedback"
+
+  # 研究方向关键词过滤（第二层"细筛"）
+  # 论文须同时满足：包含至少一个 required_term + 包含至少一个 keyword
   # 不区分大小写匹配
-  # 留空或注释掉则不过滤，保留该分类下所有论文
+  # 留空或注释掉则不过滤（仅使用 required_terms 过滤）
   keywords:
     # LLM 推理方向
     - "LLM reasoning"
-    - "chain of thought"
-    - "chain-of-thought"
-    - "CoT"
-    - "tree of thought"
-    - "tree-of-thought"
     - "reasoning"
     - "inference"
     - "step-by-step"
@@ -23,28 +31,18 @@ arxiv:
     - "multi-step reasoning"
     - "self-consistency"
     - "retrieval-augmented generation"
-    - "RAG"
-    - "in-context learning"
-    - "ICL"
-    - "prompt engineering"
-    - "instruction tuning"
     - "RLHF"
+    - "RLVR"
+    - "RL"
     - "reinforcement learning from human feedback"
-    - "alignment"
     - "reward model"
     - "tool use"
-    - "agent"
-    - "multi-agent"
     - "planning"
     - "code generation"
     - "self-reflection"
-    - "hallucination"
-    - "faithfulness"
-    - "knowledge distillation"
 
     # 自动驾驶 3D 方向
     - "autonomous driving"
-    - "self-driving"
     - "3D object detection"
     - "3D perception"
     - "3D point cloud"
@@ -52,22 +50,16 @@ arxiv:
     - "BEV"
     - "bird's eye view"
     - "bird's-eye-view"
-    - "occupancy prediction"
-    - "occupancy network"
-    - "3D lane detection"
     - "depth estimation"
     - "monocular 3D"
     - "multi-view 3D"
     - "3D tracking"
-    - "motion prediction"
     - "trajectory prediction"
     - "end-to-end driving"
     - "sensor fusion"
     - "camera-LiDAR fusion"
     - "3D semantic segmentation"
     - "3D scene understanding"
-    - "HD map"
-    - "map construction"
     - "surround view"
     - "ego vehicle"
 
@@ -75,16 +67,10 @@ arxiv:
     - "4D reconstruction"
     - "dynamic scene reconstruction"
     - "4D scene"
-    - "neural radiance field"
-    - "NeRF"
-    - "dynamic NeRF"
     - "4D Gaussian"
     - "3D Gaussian splatting"
     - "Gaussian splatting"
     - "4D generation"
-    - "dynamic 3D"
-    - "temporal 3D"
-    - "deformable NeRF"
     - "scene flow"
     - "non-rigid reconstruction"
     - "dynamic point cloud"
@@ -92,13 +78,6 @@ arxiv:
     - "novel view synthesis"
     - "3D reconstruction"
     - "multi-view reconstruction"
-    - "volumetric rendering"
-    - "implicit representation"
-    - "neural implicit"
-    - "signed distance function"
-    - "SDF"
-    - "mesh reconstruction"
-    - "surface reconstruction"
 
 llm:
   model_name: 'deepseek-chat'  # 使用的LLM模型

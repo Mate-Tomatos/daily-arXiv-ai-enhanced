@@ -19,33 +19,52 @@ class DailyArxivPipeline:
     def __init__(self):
         self.page_size = 100
         self.client = arxiv.Client(self.page_size)
-        self.keywords = self._load_keywords()
+        self.required_terms, self.keywords = self._load_filter_config()
+
+        # 预编译 required_terms 正则
+        self.required_patterns = []
+        if self.required_terms:
+            for term in self.required_terms:
+                pattern = re.compile(re.escape(term), re.IGNORECASE)
+                self.required_patterns.append((term, pattern))
+            print(f"[RequiredFilter] Loaded {len(self.required_terms)} required terms", file=sys.stderr)
+        else:
+            print("[RequiredFilter] No required_terms configured, skipping first-layer filter", file=sys.stderr)
+
+        # 预编译 keywords 正则
+        self.keyword_patterns = []
         if self.keywords:
-            # 预编译正则：对每个关键词构建 word-boundary 匹配（不区分大小写）
-            # 对于含特殊字符的关键词（如 "3D"、"chain-of-thought"）使用精确匹配
-            self.keyword_patterns = []
             for kw in self.keywords:
-                # 转义正则特殊字符，然后用 \b 包裹做单词边界匹配
                 pattern = re.compile(re.escape(kw), re.IGNORECASE)
                 self.keyword_patterns.append((kw, pattern))
             print(f"[KeywordFilter] Loaded {len(self.keywords)} keywords for filtering", file=sys.stderr)
         else:
-            self.keyword_patterns = []
-            print("[KeywordFilter] No keywords configured, all papers will be kept", file=sys.stderr)
+            print("[KeywordFilter] No keywords configured, skipping second-layer filter", file=sys.stderr)
 
-    def _load_keywords(self):
-        """从 config.yaml 加载研究方向关键词列表"""
+    def _load_filter_config(self):
+        """从 config.yaml 加载 required_terms 和 keywords"""
         config_path = os.path.join(os.path.dirname(__file__), '..', 'config.yaml')
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f)
-            keywords = config.get('arxiv', {}).get('keywords', [])
+            arxiv_cfg = config.get('arxiv', {})
+
+            required = arxiv_cfg.get('required_terms', [])
+            if required:
+                required = [t.strip() for t in required if t and t.strip()]
+            else:
+                required = []
+
+            keywords = arxiv_cfg.get('keywords', [])
             if keywords:
-                return [kw.strip() for kw in keywords if kw and kw.strip()]
-            return []
+                keywords = [kw.strip() for kw in keywords if kw and kw.strip()]
+            else:
+                keywords = []
+
+            return required, keywords
         except Exception as e:
-            print(f"[KeywordFilter] Failed to load config.yaml: {e}", file=sys.stderr)
-            return []
+            print(f"[Filter] Failed to load config.yaml: {e}", file=sys.stderr)
+            return [], []
 
     def _match_keywords(self, title, summary):
         """检查标题或摘要中是否包含至少一个关键词，返回匹配到的关键词列表"""
@@ -72,17 +91,35 @@ class DailyArxivPipeline:
         item["comment"] = paper.comment
         item["summary"] = paper.summary
 
-        # 关键词过滤：如果配置了关键词，则只保留标题或摘要中包含关键词的论文
+        text = f"{item['title']} {item['summary']}"
+
+        # 第一层过滤：required_terms（必须出现至少一个）
+        if self.required_patterns:
+            matched_required = []
+            for term, pattern in self.required_patterns:
+                if pattern.search(text):
+                    matched_required.append(term)
+            if not matched_required:
+                raise DropItem(
+                    f"[RequiredFilter] Dropped paper {item['id']} "
+                    f"'{item['title'][:60]}...' - no required term match"
+                )
+            item["matched_required_terms"] = matched_required
+            spider.logger.info(
+                f"[RequiredFilter] Paper {item['id']} passed - matched required: {matched_required}"
+            )
+
+        # 第二层过滤：keywords（必须出现至少一个）
         if self.keyword_patterns:
-            matched = self._match_keywords(item["title"], item["summary"])
-            if not matched:
+            matched_kw = self._match_keywords(item["title"], item["summary"])
+            if not matched_kw:
                 raise DropItem(
                     f"[KeywordFilter] Dropped paper {item['id']} "
                     f"'{item['title'][:60]}...' - no keyword match"
                 )
-            item["matched_keywords"] = matched
+            item["matched_keywords"] = matched_kw
             spider.logger.info(
-                f"[KeywordFilter] Kept paper {item['id']} - matched: {matched}"
+                f"[KeywordFilter] Kept paper {item['id']} - matched keywords: {matched_kw}"
             )
 
         return item
