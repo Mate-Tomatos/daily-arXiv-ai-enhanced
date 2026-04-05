@@ -327,7 +327,7 @@ header {
 }
 
 .keyword-label-container {
-  display: flex;
+  display: none;
   align-items: center;
   max-width: 1440px;
   width: 100%;

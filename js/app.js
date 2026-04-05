@@ -816,19 +816,44 @@ function renderKeywordFilter() {
   const container = document.getElementById('keywordScroll');
   if (!container) return;
 
-  // 从所有论文中收集 matched_keywords 及其计数
   const keywordCounts = {};
-  let totalWithKeywords = 0;
   let totalPapers = 0;
+
+  // 先检查是否有后端预计算的 matched_keywords
+  let hasBackendKeywords = false;
+  Object.values(paperData).forEach(papers => {
+    papers.forEach(paper => {
+      if (paper.matched_keywords && paper.matched_keywords.length > 0) {
+        hasBackendKeywords = true;
+      }
+    });
+  });
 
   Object.values(paperData).forEach(papers => {
     papers.forEach(paper => {
       totalPapers++;
-      if (paper.matched_keywords && paper.matched_keywords.length > 0) {
-        totalWithKeywords++;
-        paper.matched_keywords.forEach(kw => {
-          keywordCounts[kw] = (keywordCounts[kw] || 0) + 1;
+
+      if (hasBackendKeywords) {
+        // 使用后端预计算的关键词
+        if (paper.matched_keywords && paper.matched_keywords.length > 0) {
+          paper.matched_keywords.forEach(kw => {
+            keywordCounts[kw] = (keywordCounts[kw] || 0) + 1;
+          });
+        }
+      } else {
+        // 前端客户端匹配：使用 RESEARCH_KEYWORDS 列表
+        const text = `${paper.title} ${paper.summary}`.toLowerCase();
+        const matched = [];
+        RESEARCH_KEYWORDS.forEach(kw => {
+          if (text.includes(kw.toLowerCase())) {
+            keywordCounts[kw] = (keywordCounts[kw] || 0) + 1;
+            matched.push(kw);
+          }
         });
+        // 将匹配结果写回 paper 对象，供筛选使用
+        if (matched.length > 0) {
+          paper.matched_keywords = matched;
+        }
       }
     });
   });
@@ -836,7 +861,7 @@ function renderKeywordFilter() {
   // 按计数降序排列关键词
   const sortedKeywords = Object.keys(keywordCounts).sort((a, b) => keywordCounts[b] - keywordCounts[a]);
 
-  // 如果没有任何 matched_keywords，隐藏整个关键词栏
+  // 如果没有任何匹配的关键词，隐藏整个关键词栏
   const keywordContainer = document.querySelector('.keyword-label-container');
   if (sortedKeywords.length === 0) {
     if (keywordContainer) keywordContainer.style.display = 'none';
